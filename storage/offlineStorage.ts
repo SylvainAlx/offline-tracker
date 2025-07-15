@@ -47,6 +47,11 @@ export async function getUnsyncedPeriods(): Promise<OfflinePeriod[]> {
   return await getPeriods();
 }
 
-export async function clearPeriods() {
-  await AsyncStorage.removeItem(STORAGE_KEYS.OFFLINE_PERIODS);
+export async function clearPeriod(index: number) {
+  const periods = await getUnsyncedPeriods();
+  periods.splice(index, 1);
+  await AsyncStorage.setItem(
+    STORAGE_KEYS.OFFLINE_PERIODS,
+    JSON.stringify(periods)
+  );
 }

@@ -1,38 +1,51 @@
 import GoalProgress from "@/components/GoalProgress";
 import { GOALS } from "@/constants/Goals";
 import { useOfflineProgress } from "@/contexts/OfflineProgressContext";
+import { useSession } from "@/contexts/SessionContext";
+import { useSyncSession } from "@/hooks/useSyncSession";
 import { formatDuration } from "@/utils/formatDuration";
 import { getLastOpenPeriod } from "@/utils/getOfflineTime";
-import NetInfo from "@react-native-community/netinfo";
+import { Link } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Button, StyleSheet, Text, View } from "react-native";
 
 export default function Home() {
-  const [isConnected, setIsConnected] = useState<boolean>(true);
   const [since, setSince] = useState<Date | null>(null);
   const [elapsed, setElapsed] = useState<string>("0s");
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const { totalSeconds } = useOfflineProgress();
 
-  const nextGoal = GOALS.find((goal) => totalSeconds < goal.targetSeconds);
+  const { totalSyncSeconds, session } = useSession();
+  const { syncMeasures } = useSyncSession(session);
+  const { totalUnsync, isOnline } = useOfflineProgress();
+  const [nextGoal, setNextGoal] = useState<(typeof GOALS)[0] | undefined>(
+    undefined
+  );
 
   useEffect(() => {
-    const unsubscribe = NetInfo.addEventListener(async (state) => {
-      const connected = state.isConnected && state.isInternetReachable;
-      setIsConnected(connected ?? false);
-
-      if (!connected) {
-        const open = await getLastOpenPeriod();
-        setSince(open);
+    const loadStartTime = async () => {
+      const now = new Date();
+      const startTime = await getLastOpenPeriod(); // Assume this function fetches the start time from storage
+      if (startTime) {
+        setSince(new Date(startTime));
+        const diff = Math.floor(
+          (now.getTime() - new Date(startTime).getTime()) / 1000
+        );
+        setElapsed(formatDuration(diff));
       }
-    });
-
-    return () => unsubscribe();
-  }, []);
+    };
+    if (!isOnline) loadStartTime();
+  }, [isOnline]);
 
   useEffect(() => {
-    if (since && !isConnected) {
+    const goal = GOALS.find(
+      (goal) => totalSyncSeconds + totalUnsync < goal.targetSeconds
+    );
+    setNextGoal(goal);
+  }, [totalSyncSeconds, totalUnsync]);
+
+  useEffect(() => {
+    if (since && !isOnline) {
       intervalRef.current = setInterval(async () => {
         const now = new Date();
         const diff = Math.floor((now.getTime() - since.getTime()) / 1000);
@@ -43,49 +56,78 @@ export default function Home() {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [isConnected, since]);
+  }, [isOnline, since]);
 
   return (
     <View
-      style={[
-        styles.container,
-        !isConnected ? styles.offlineBg : styles.onlineBg,
-      ]}
+      style={[styles.container, isOnline ? styles.onlineBg : styles.offlineBg]}
     >
-      <Text
-        style={[
-          styles.statusText,
-          !isConnected ? styles.offlineText : styles.onlineText,
-        ]}
-      >
-        {isConnected === null
-          ? "Chargement..."
-          : !isConnected
-          ? "🧘 Tu es hors ligne"
-          : "📶 En ligne"}
-      </Text>
-      {!isConnected && (
-        <Text style={styles.timer}>{since ? `Depuis ${elapsed}` : ""}</Text>
-      )}
-      {isConnected ? (
-        <Text style={styles.info}>
-          Tu es connecté ! Coupe ta connexion internet pour commencer 🌐
+      <View style={styles.card}>
+        <Text
+          style={[
+            styles.statusText,
+            isOnline ? styles.onlineText : styles.offlineText,
+          ]}
+        >
+          {isOnline === null
+            ? "Chargement..."
+            : isOnline
+            ? "📶 Appareil connecté à internet"
+            : "🧘 Appareil hors ligne"}
         </Text>
-      ) : (
-        <Text style={styles.encouragement}>
-          👏 Bien joué ! Profite de ta déconnexion pour te recentrer ✨
-        </Text>
-      )}
 
-      <View style={styles.totalContainer}>
-        <Text style={styles.totalLabel}>⏱️ Temps total hors ligne :</Text>
-        <Text style={styles.totalValue}>{formatDuration(totalSeconds)}</Text>
-        <View style={{ marginTop: 30 }}>
-          <Text style={styles.label}>Objectif en cours :</Text>
-          {nextGoal && (
-            <GoalProgress goal={nextGoal} totalSeconds={totalSeconds} />
-          )}
-        </View>
+        {!isOnline && since && (
+          <Text style={styles.timer}>⏳ Depuis {elapsed}</Text>
+        )}
+
+        <Text style={styles.message}>
+          {isOnline
+            ? "🌐 Coupe ta connexion pour commencer une session focus."
+            : "✨ Bien joué ! Profite de ta déconnexion pour te recentrer."}
+        </Text>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.sectionTitle}>Statistiques</Text>
+
+        <Text style={styles.totalLabel}>🔄 Synchronisé :</Text>
+        <Text style={styles.totalValue}>
+          {formatDuration(totalSyncSeconds)}
+        </Text>
+
+        <Text style={styles.totalLabel}>📥 Non synchronisé :</Text>
+        <Text style={styles.totalValue}>{formatDuration(totalUnsync)}</Text>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.sectionTitle}>🎯 Objectif en cours</Text>
+        {nextGoal && (
+          <GoalProgress
+            goal={nextGoal}
+            totalSeconds={totalSyncSeconds + totalUnsync}
+          />
+        )}
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.sectionTitle}>🔄 Synchronisation</Text>
+        <Text style={styles.message}>
+          {session
+            ? "Compte et appareil liés"
+            : "Vous devez avoir un compte pour synchroniser le temps hors ligne"}
+        </Text>
+        {session ? (
+          <Button
+            title="Synchroniser"
+            color={isOnline ? "#007aff" : "#aaa"}
+            disabled={!isOnline || totalUnsync === 0}
+            onPress={() => session && syncMeasures(session)}
+          />
+        ) : (
+          <Link href={"/profile"}>
+            <Button title="Accéder au profile" color={"#007aff"} />
+          </Link>
+        )}
       </View>
     </View>
   );
@@ -94,53 +136,68 @@ export default function Home() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
     padding: 20,
+    backgroundColor: "#f5f7fa",
+  },
+  card: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 20,
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 3,
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
   },
   statusText: {
-    fontSize: 26,
-    fontWeight: "bold",
+    fontSize: 24,
+    fontWeight: "600",
+    textAlign: "center",
     marginBottom: 8,
   },
   timer: {
-    fontSize: 18,
+    fontSize: 16,
     color: "#888",
-  },
-  info: {
-    marginTop: 20,
-    fontSize: 16,
-    color: "#000",
     textAlign: "center",
   },
-  label: {
+  message: {
+    fontSize: 16,
+    color: "#555",
+    textAlign: "center",
+    marginTop: 10,
+    marginBottom: 10,
+  },
+  sectionTitle: {
     fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 8,
-    color: "#333",
+    fontWeight: "600",
+    marginBottom: 10,
     textAlign: "center",
-  },
-  encouragement: {
-    marginTop: 20,
-    fontSize: 16,
-    color: "#4CAF50",
-    textAlign: "center",
-  },
-  totalContainer: {
-    marginTop: 40,
-    alignItems: "center",
   },
   totalLabel: {
-    fontSize: 16,
-    color: "#666",
+    fontSize: 14,
+    color: "#777",
+    marginTop: 10,
+    textAlign: "center",
   },
   totalValue: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: "bold",
     color: "#333",
+    textAlign: "center",
   },
-  onlineText: { color: "#007aff" },
-  offlineText: { color: "#4CAF50" },
-  onlineBg: { backgroundColor: "#f0f8ff" },
-  offlineBg: { backgroundColor: "#e8f5e9" },
+  onlineText: {
+    color: "#007aff",
+  },
+  offlineText: {
+    color: "#4CAF50",
+  },
+  onlineBg: {
+    backgroundColor: "#eaf4ff",
+  },
+  offlineBg: {
+    backgroundColor: "#e6f4ea",
+  },
 });

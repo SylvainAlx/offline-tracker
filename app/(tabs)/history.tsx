@@ -1,23 +1,32 @@
-import { STORAGE_KEYS } from "@/constants/Labels";
+import { getAllMeasures } from "@/api/measures";
+import { useSession } from "@/contexts/SessionContext";
 import { OfflinePeriod } from "@/types/OfflinePeriod";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Session } from "@supabase/supabase-js";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import React, { useEffect, useState } from "react";
 import { Button, FlatList, StyleSheet, Text, View } from "react-native";
 
 export default function HistoryScreen() {
-  const [slots, setSlots] = useState<OfflinePeriod[]>([]);
+  const [measures, setMeasures] = useState<OfflinePeriod[]>([]);
+  const { session } = useSession();
 
-  const loadSlots = async () => {
-    const raw = await AsyncStorage.getItem(STORAGE_KEYS.OFFLINE_PERIODS);
-    if (!raw) return;
-    setSlots(JSON.parse(raw));
+  const loadSlots = async (session: Session) => {
+    const data = await getAllMeasures(session);
+
+    if (!data) return;
+    setMeasures(
+      data.map((item: { start: string; end?: string; duration?: number }) => ({
+        from: item.start,
+        to: item.end,
+        duration: item.duration,
+      }))
+    );
   };
 
   useEffect(() => {
-    loadSlots();
-  }, []);
+    if (session) loadSlots(session);
+  }, [session]);
 
   return (
     <View style={styles.container}>
@@ -25,11 +34,11 @@ export default function HistoryScreen() {
         <Text style={styles.title}>Historique hors ligne</Text>
       </View>
 
-      {slots.length === 0 ? (
+      {measures.length === 0 ? (
         <Text style={styles.empty}>Aucune session hors ligne enregistrée.</Text>
       ) : (
         <FlatList
-          data={slots}
+          data={measures}
           keyExtractor={(_, index) => index.toString()}
           renderItem={({ item }) => {
             const start = format(
@@ -50,7 +59,10 @@ export default function HistoryScreen() {
           }}
         />
       )}
-      <Button title="Actualiser" onPress={loadSlots} />
+      <Button
+        title="Actualiser"
+        onPress={() => session && loadSlots(session)}
+      />
     </View>
   );
 }
