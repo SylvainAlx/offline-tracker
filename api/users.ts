@@ -1,6 +1,6 @@
+import { showMessage } from "@/utils/formatNotification";
 import { supabase } from "@/utils/supabase";
 import { Session } from "@supabase/supabase-js";
-import { Alert } from "react-native";
 
 export async function getUser(session: Session) {
   try {
@@ -20,7 +20,7 @@ export async function getUser(session: Session) {
     }
   } catch (error) {
     if (error instanceof Error) {
-      Alert.alert(error.message);
+      showMessage(error.message);
     }
   }
 }
@@ -48,7 +48,7 @@ export async function updateUser({
     }
   } catch (error) {
     if (error instanceof Error) {
-      Alert.alert(error.message);
+      showMessage(error.message);
     }
   }
 }

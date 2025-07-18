@@ -1,6 +1,6 @@
+import { showMessage } from "@/utils/formatNotification";
 import { supabase } from "@/utils/supabase";
 import { Session } from "@supabase/supabase-js";
-import { Alert } from "react-native";
 
 export async function getDeviceId(session: Session, deviceName: string) {
   try {
@@ -21,7 +21,7 @@ export async function getDeviceId(session: Session, deviceName: string) {
     }
   } catch (error) {
     if (error instanceof Error) {
-      Alert.alert(error.message);
+      showMessage(error.message);
     }
   }
 }
@@ -56,7 +56,7 @@ export async function insertDevice(session: Session, deviceName: string) {
     return { success: true };
   } catch (error) {
     if (error instanceof Error) {
-      Alert.alert(error.message);
+      showMessage(error.message);
     }
     return { success: false };
   }

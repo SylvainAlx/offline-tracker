@@ -1,8 +1,8 @@
 import { signInWithEmail, signUpWithEmail } from "@/api/auth";
 import { supabase } from "@/utils/supabase";
 import { Button, Input } from "@rneui/themed";
-import React, { useState } from "react";
-import { AppState, StyleSheet, View } from "react-native";
+import React, { useRef, useState } from "react";
+import { AppState, StyleSheet, TextInput, View } from "react-native";
 
 // Tells Supabase Auth to continuously refresh the session automatically if
 // the app is in the foreground. When this is added, you will continue to receive
@@ -20,6 +20,8 @@ export default function Auth() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const passwordRef = useRef<TextInput>(null);
 
   async function signIn() {
     setLoading(true);
@@ -41,8 +43,9 @@ export default function Auth() {
           leftIcon={{ type: "font-awesome", name: "envelope" }}
           onChangeText={(text) => setEmail(text)}
           value={email}
-          placeholder="email@address.com"
+          placeholder="adresse e-mail"
           autoCapitalize={"none"}
+          onSubmitEditing={() => passwordRef.current?.focus()}
         />
       </View>
       <View style={styles.verticallySpaced}>
@@ -54,14 +57,12 @@ export default function Auth() {
           secureTextEntry={true}
           placeholder="Mot de passe"
           autoCapitalize={"none"}
+          returnKeyType="done"
+          onSubmitEditing={signIn}
         />
       </View>
       <View style={[styles.verticallySpaced, styles.mt20]}>
-        <Button
-          title="Se connecter"
-          disabled={loading}
-          onPress={() => signIn()}
-        />
+        <Button title="Se connecter" disabled={loading} onPress={signIn} />
       </View>
       <View style={styles.verticallySpaced}>
         <Button

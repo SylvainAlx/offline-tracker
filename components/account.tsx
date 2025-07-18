@@ -1,7 +1,7 @@
+import { logout } from "@/api/auth";
 import { getUser, updateUser } from "@/api/users";
 import { useSession } from "@/contexts/SessionContext";
 import { useSyncSession } from "@/hooks/useSyncSession";
-import { supabase } from "@/utils/supabase";
 import { Button, Input } from "@rneui/themed";
 import { Session } from "@supabase/supabase-js";
 import { useEffect, useState } from "react";
@@ -9,10 +9,14 @@ import { Alert, StyleSheet, Text, View } from "react-native";
 
 export default function Account({ session }: { session: Session }) {
   const [loading, setLoading] = useState(true);
-  const [username, setUsername] = useState("");
-  const [deviceName, setDeviceName] = useState("");
   const { getAndUpdateLocalDevice } = useSyncSession(session);
-  const { setTotalSyncSeconds } = useSession();
+  const {
+    setTotalSyncSeconds,
+    username,
+    setUsername,
+    deviceName,
+    setDeviceName,
+  } = useSession();
 
   useEffect(() => {
     if (session) getProfile();
@@ -67,7 +71,7 @@ export default function Account({ session }: { session: Session }) {
       <View style={[styles.verticallySpaced, styles.mt20]}>
         <Button
           title={loading ? "Chargement ..." : "Mettre à jour"}
-          onPress={() => updateProfile({ username })}
+          onPress={() => updateProfile({ username: username ?? "" })}
           disabled={loading}
         />
       </View>
@@ -76,7 +80,7 @@ export default function Account({ session }: { session: Session }) {
         <Button
           title="Se déconnecter"
           onPress={() => {
-            supabase.auth.signOut();
+            logout();
             setTotalSyncSeconds(0);
           }}
         />

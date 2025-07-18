@@ -1,5 +1,10 @@
 import { config } from "@/config/env";
-import { addPeriod, closeLastPeriod } from "@/storage/offlineStorage";
+import {
+  addPeriod,
+  closeLastPeriod,
+  deleteUnclosePeriods,
+} from "@/storage/offlineStorage";
+import { showMessage } from "@/utils/formatNotification";
 import { getTotalOfflineSeconds } from "@/utils/getOfflineTime";
 import NetInfo from "@react-native-community/netinfo";
 import React, {
@@ -9,11 +14,10 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { useSession } from "./SessionContext";
 
 type OfflineProgressContextType = {
   totalUnsync: number;
-  setTotalUnsync: (value: number) => void; // Optional setter for testing
+  setTotalUnsync: (value: number) => void;
   isOnline: boolean;
 };
 
@@ -30,64 +34,83 @@ export const OfflineProgressProvider = ({
 }) => {
   const [totalUnsync, setTotalUnsync] = useState<number>(0);
   const [isOnline, setIsOnline] = useState<boolean>(true);
-  const { session } = useSession();
+  const [startRecord, setStartRecord] = useState<boolean>(false);
   const wasOffline = useRef(false);
-  const isInitialized = useRef(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Detect connectivity
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      isInitialized.current = true;
-    }, config.startupDelayMs);
-
-    const unsubscribe = NetInfo.addEventListener(async (state) => {
-      const connected = state.isConnected && state.isInternetReachable;
-      if (!isInitialized.current) return;
-
-      setIsOnline(!!connected);
-    });
-
-    return () => {
-      clearTimeout(timeout);
-      unsubscribe();
-    };
-  }, []);
-
-  // Increment counter every second if offline
+  // 1. Charger le temps offline immédiatement au démarrage
   useEffect(() => {
     const loadInitial = async () => {
       const seconds = await getTotalOfflineSeconds(true);
       setTotalUnsync(seconds);
     };
     loadInitial();
+    deleteUnclosePeriods();
+  }, []);
 
-    const addNewPeriod = async () => {
-      await addPeriod({ from: new Date().toISOString() });
+  // 3. Gérer la détection de réseau uniquement après délai d'init
+  useEffect(() => {
+    const unsubscribe = NetInfo.addEventListener((state) => {
+      const connected = state.isConnected && state.isInternetReachable;
+      console.log({ connected });
+      setIsOnline(!!connected);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    const addMeasure = async () => {
+      if (startRecord) {
+        await addPeriod({ from: new Date().toISOString() });
+        showMessage("Démarrage d'une nouvelle mesure hors ligne");
+      }
     };
-    if (!isOnline && !wasOffline.current) {
-      wasOffline.current = true;
-      addNewPeriod();
+    addMeasure();
+  }, [startRecord]);
+
+  // 4. Gérer la logique de tracking (addPeriod, compteur, etc.)
+  useEffect(() => {
+    if (isOnline) {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+      if (wasOffline.current && isOnline) {
+        wasOffline.current = false;
+        closeLastPeriod(new Date().toISOString());
+        showMessage("cloture de la mesure hors ligne");
+      }
+      return;
     }
 
-    if (isOnline && wasOffline.current) {
-      wasOffline.current = false;
-      closeLastPeriod(new Date().toISOString());
-    }
+    const startOfflineTracking = async () => {
+      if (!wasOffline.current && !isOnline) {
+        wasOffline.current = true;
 
-    if (!isOnline) {
-      intervalRef.current = setInterval(() => {
-        setTotalUnsync((prev) => prev + 1);
-      }, 1000);
-    } else if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
+        if (!intervalRef.current) {
+          const delay = config.startupDelayMs;
+          const startTime = Date.now() + delay;
+          intervalRef.current = setInterval(() => {
+            if (startTime <= Date.now()) {
+              setStartRecord(true);
+              setTotalUnsync((prev) => prev + 1);
+            }
+          }, 1000);
+        }
+      }
+    };
+
+    startOfflineTracking();
 
     return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+        setStartRecord(false);
+      }
     };
-  }, [isOnline, session]);
+  }, [isOnline]);
 
   return (
     <OfflineProgressContext.Provider

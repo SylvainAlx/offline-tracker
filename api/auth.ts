@@ -1,13 +1,16 @@
+import { showMessage } from "@/utils/formatNotification";
 import { supabase } from "@/utils/supabase";
-import { Alert } from "react-native";
 
 export async function signInWithEmail(email: string, password: string) {
-  const { error } = await supabase.auth.signInWithPassword({
-    email: email,
-    password: password,
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
   });
-
-  if (error) Alert.alert(error.message);
+  if (error) {
+    showMessage(error.message);
+  } else if (data.session) {
+    showMessage("Connexion réussie 🎉");
+  }
 }
 
 export async function signUpWithEmail(email: string, password: string) {
@@ -15,10 +18,25 @@ export async function signUpWithEmail(email: string, password: string) {
     data: { session },
     error,
   } = await supabase.auth.signUp({
-    email: email,
-    password: password,
+    email,
+    password,
   });
 
-  if (error) Alert.alert(error.message);
-  if (!session) Alert.alert("Please check your inbox for email verification!");
+  if (error) {
+    showMessage(error.message);
+    return;
+  }
+
+  if (!session) {
+    showMessage(
+      "Veuillez vérifier votre boîte mail pour activer votre compte."
+    );
+  } else {
+    showMessage("Inscription réussie 🎉");
+  }
+}
+
+export function logout() {
+  supabase.auth.signOut();
+  showMessage("Déconnexion réussie");
 }

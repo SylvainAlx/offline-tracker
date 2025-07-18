@@ -3,11 +3,14 @@ import { GOALS } from "@/constants/Goals";
 import { useOfflineProgress } from "@/contexts/OfflineProgressContext";
 import { useSession } from "@/contexts/SessionContext";
 import { useSyncSession } from "@/hooks/useSyncSession";
+import { globalStyles } from "@/styles/global.styles";
+import { indexStyles } from "@/styles/index.styles";
 import { formatDuration } from "@/utils/formatDuration";
 import { getLastOpenPeriod } from "@/utils/getOfflineTime";
+import { Session } from "@supabase/supabase-js";
 import { Link } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { Button, StyleSheet, Text, View } from "react-native";
+import { Button, ScrollView, Text, View } from "react-native";
 
 export default function Home() {
   const [since, setSince] = useState<Date | null>(null);
@@ -15,12 +18,24 @@ export default function Home() {
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const { totalSyncSeconds, session } = useSession();
+  const { totalSyncSeconds, session, username } = useSession();
   const { syncMeasures } = useSyncSession(session);
   const { totalUnsync, isOnline } = useOfflineProgress();
   const [nextGoal, setNextGoal] = useState<(typeof GOALS)[0] | undefined>(
     undefined
   );
+  const [isLoading, setIsLoading] = useState(false);
+
+  const sendPeriods = async (session: Session) => {
+    try {
+      setIsLoading(true);
+      await syncMeasures(session);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
     const loadStartTime = async () => {
@@ -59,14 +74,17 @@ export default function Home() {
   }, [isOnline, since]);
 
   return (
-    <View
-      style={[styles.container, isOnline ? styles.onlineBg : styles.offlineBg]}
+    <ScrollView
+      style={isOnline ? indexStyles.onlineBg : indexStyles.offlineBg}
+      contentContainerStyle={globalStyles.container}
+      showsVerticalScrollIndicator={true}
     >
-      <View style={styles.card}>
+      <Text style={globalStyles.title}>Bienvenue {username && username} !</Text>
+      <View style={globalStyles.card}>
         <Text
           style={[
-            styles.statusText,
-            isOnline ? styles.onlineText : styles.offlineText,
+            indexStyles.statusText,
+            isOnline ? indexStyles.onlineText : indexStyles.offlineText,
           ]}
         >
           {isOnline === null
@@ -77,30 +95,38 @@ export default function Home() {
         </Text>
 
         {!isOnline && since && (
-          <Text style={styles.timer}>⏳ Depuis {elapsed}</Text>
+          <Text style={indexStyles.timer}>⏳ Depuis {elapsed}</Text>
         )}
 
-        <Text style={styles.message}>
+        <Text style={indexStyles.message}>
           {isOnline
             ? "🌐 Coupe ta connexion pour commencer une session focus."
             : "✨ Bien joué ! Profite de ta déconnexion pour te recentrer."}
         </Text>
       </View>
 
-      <View style={styles.card}>
-        <Text style={styles.sectionTitle}>Statistiques</Text>
-
-        <Text style={styles.totalLabel}>🔄 Synchronisé :</Text>
-        <Text style={styles.totalValue}>
-          {formatDuration(totalSyncSeconds)}
-        </Text>
-
-        <Text style={styles.totalLabel}>📥 Non synchronisé :</Text>
-        <Text style={styles.totalValue}>{formatDuration(totalUnsync)}</Text>
+      <View style={globalStyles.card}>
+        <Text style={indexStyles.sectionTitle}>Statistiques</Text>
+        <View>
+          <Text style={indexStyles.totalLabel}>🔄 Synchronisé :</Text>
+          <Text style={indexStyles.totalValue}>
+            {formatDuration(totalSyncSeconds)}
+          </Text>
+        </View>
+        <View>
+          <Text style={indexStyles.totalLabel}>📥 Non synchronisé :</Text>
+          {!isOnline && totalUnsync === 0 ? (
+            <Text style={indexStyles.totalValue}>DÉMARRAGE...</Text>
+          ) : (
+            <Text style={indexStyles.totalValue}>
+              {formatDuration(totalUnsync)}
+            </Text>
+          )}
+        </View>
       </View>
 
-      <View style={styles.card}>
-        <Text style={styles.sectionTitle}>🎯 Objectif en cours</Text>
+      <View style={globalStyles.card}>
+        <Text style={indexStyles.sectionTitle}>🎯 Objectif en cours</Text>
         {nextGoal && (
           <GoalProgress
             goal={nextGoal}
@@ -109,9 +135,9 @@ export default function Home() {
         )}
       </View>
 
-      <View style={styles.card}>
-        <Text style={styles.sectionTitle}>🔄 Synchronisation</Text>
-        <Text style={styles.message}>
+      <View style={globalStyles.card}>
+        <Text style={indexStyles.sectionTitle}>🔄 Synchronisation</Text>
+        <Text style={indexStyles.message}>
           {session
             ? "Compte et appareil liés"
             : "Vous devez avoir un compte pour synchroniser le temps hors ligne"}
@@ -120,8 +146,8 @@ export default function Home() {
           <Button
             title="Synchroniser"
             color={isOnline ? "#007aff" : "#aaa"}
-            disabled={!isOnline || totalUnsync === 0}
-            onPress={() => session && syncMeasures(session)}
+            disabled={!isOnline || totalUnsync === 0 || isLoading}
+            onPress={() => session && sendPeriods(session)}
           />
         ) : (
           <Link href={"/profile"}>
@@ -129,75 +155,6 @@ export default function Home() {
           </Link>
         )}
       </View>
-    </View>
+    </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-    backgroundColor: "#f5f7fa",
-  },
-  card: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 20,
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 3,
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-  },
-  statusText: {
-    fontSize: 24,
-    fontWeight: "600",
-    textAlign: "center",
-    marginBottom: 8,
-  },
-  timer: {
-    fontSize: 16,
-    color: "#888",
-    textAlign: "center",
-  },
-  message: {
-    fontSize: 16,
-    color: "#555",
-    textAlign: "center",
-    marginTop: 10,
-    marginBottom: 10,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    marginBottom: 10,
-    textAlign: "center",
-  },
-  totalLabel: {
-    fontSize: 14,
-    color: "#777",
-    marginTop: 10,
-    textAlign: "center",
-  },
-  totalValue: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
-    textAlign: "center",
-  },
-  onlineText: {
-    color: "#007aff",
-  },
-  offlineText: {
-    color: "#4CAF50",
-  },
-  onlineBg: {
-    backgroundColor: "#eaf4ff",
-  },
-  offlineBg: {
-    backgroundColor: "#e6f4ea",
-  },
-});

@@ -28,7 +28,7 @@ export async function closeLastPeriod(to: string) {
   const toDate = new Date(to);
   const duration = toDate.getTime() - fromDate.getTime();
 
-  if (duration >= config.startupDelayMs) {
+  if (duration >= config.minimumDurationMs) {
     last.to = to;
   } else {
     // Supprimer la période si elle est trop courte
@@ -40,6 +40,15 @@ export async function closeLastPeriod(to: string) {
   await AsyncStorage.setItem(
     STORAGE_KEYS.OFFLINE_PERIODS,
     JSON.stringify(reversed.reverse())
+  );
+}
+
+export async function deleteUnclosePeriods() {
+  const data = await getPeriods();
+  const updated = data.filter((period) => period.to);
+  await AsyncStorage.setItem(
+    STORAGE_KEYS.OFFLINE_PERIODS,
+    JSON.stringify(updated)
   );
 }
 

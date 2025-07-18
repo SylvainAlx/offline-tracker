@@ -6,6 +6,10 @@ import { createContext, useContext, useEffect, useState } from "react";
 type SessionContextType = {
   session: Session | null;
   user: User | null;
+  username: string | null;
+  setUsername: (value: string) => void;
+  deviceName: string | null;
+  setDeviceName: (value: string) => void;
   totalSyncSeconds: number;
   setTotalSyncSeconds: (value: number) => void;
 };
@@ -13,6 +17,10 @@ type SessionContextType = {
 const SessionContext = createContext<SessionContextType>({
   session: null,
   user: null,
+  username: null,
+  setUsername: () => {},
+  deviceName: null,
+  setDeviceName: () => {},
   totalSyncSeconds: 0,
   setTotalSyncSeconds: () => {},
 });
@@ -23,6 +31,8 @@ export const SessionProvider = ({
   children: React.ReactNode;
 }) => {
   const [session, setSession] = useState<Session | null>(null);
+  const [deviceName, setDeviceName] = useState<string | null>(null);
+  const [username, setUsername] = useState<string | null>(null);
   const [totalSyncSeconds, setTotalSyncSeconds] = useState<number>(0);
 
   useEffect(() => {
@@ -46,6 +56,10 @@ export const SessionProvider = ({
       value={{
         session,
         user: session?.user ?? null,
+        username,
+        setUsername,
+        deviceName,
+        setDeviceName,
         totalSyncSeconds,
         setTotalSyncSeconds,
       }}

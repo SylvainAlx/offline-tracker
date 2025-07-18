@@ -1,6 +1,6 @@
 // app/(tabs)/account.tsx
+import Account from "@/components/Account";
 import Auth from "@/components/Auth";
-import Account from "@/components/account";
 import { useSession } from "@/contexts/SessionContext";
 import { View } from "react-native";
 

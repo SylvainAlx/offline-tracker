@@ -1,27 +1,59 @@
 import { getAllMeasures } from "@/api/measures";
 import { useSession } from "@/contexts/SessionContext";
+import { globalStyles } from "@/styles/global.styles";
+import { historyStyles } from "@/styles/history.styles";
 import { OfflinePeriod } from "@/types/OfflinePeriod";
 import { Session } from "@supabase/supabase-js";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
 import React, { useEffect, useState } from "react";
-import { Button, FlatList, StyleSheet, Text, View } from "react-native";
+import { Button, FlatList, Text, View } from "react-native";
+
+type DailySummary = {
+  date: string; // yyyy-MM-dd
+  displayDate: string; // Lundi 15 juillet 2025
+  totalSeconds: number;
+};
 
 export default function HistoryScreen() {
-  const [measures, setMeasures] = useState<OfflinePeriod[]>([]);
+  const [dailyData, setDailyData] = useState<DailySummary[]>([]);
   const { session } = useSession();
 
   const loadSlots = async (session: Session) => {
-    const data = await getAllMeasures(session);
+    const raw = await getAllMeasures(session);
+    if (!raw) return;
 
-    if (!data) return;
-    setMeasures(
-      data.map((item: { start: string; end?: string; duration?: number }) => ({
-        from: item.start,
-        to: item.end,
-        duration: item.duration,
-      }))
-    );
+    const parsed: OfflinePeriod[] = raw.map((item: any) => ({
+      from: item.start,
+      to: item.end,
+      duration: item.duration,
+    }));
+
+    // Grouper par jour
+    const grouped = parsed.reduce<Record<string, number>>((acc, period) => {
+      const dayKey = format(parseISO(period.from), "yyyy-MM-dd");
+      acc[dayKey] = (acc[dayKey] || 0) + (period.duration || 0);
+      return acc;
+    }, {});
+
+    const summaries: DailySummary[] = Object.entries(grouped)
+      .sort(([a], [b]) => (a < b ? 1 : -1)) // plus récents en haut
+      .map(([date, totalSeconds]) => ({
+        date,
+        displayDate: format(parseISO(date), "EEEE d MMMM yyyy", {
+          locale: fr,
+        }),
+        totalSeconds,
+      }));
+
+    setDailyData(summaries);
+  };
+
+  const formatDuration = (seconds: number): string => {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = seconds % 60;
+    return `${h}h ${m}m ${s}s`;
   };
 
   useEffect(() => {
@@ -29,36 +61,28 @@ export default function HistoryScreen() {
   }, [session]);
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Historique hors ligne</Text>
-      </View>
+    <View style={globalStyles.container}>
+      <Text style={globalStyles.title}>Historique hors ligne</Text>
 
-      {measures.length === 0 ? (
-        <Text style={styles.empty}>Aucune session hors ligne enregistrée.</Text>
+      {dailyData.length === 0 ? (
+        <Text style={historyStyles.empty}>
+          Aucune session hors ligne enregistrée.
+        </Text>
       ) : (
         <FlatList
-          data={measures}
-          keyExtractor={(_, index) => index.toString()}
-          renderItem={({ item }) => {
-            const start = format(
-              new Date(item.from),
-              "EEEE dd MMMM yyyy HH:mm:ss",
-              { locale: fr }
-            );
-            const end =
-              item.to &&
-              format(new Date(item.to), "'→' HH:mm:ss", { locale: fr });
-            return (
-              <View style={styles.item}>
-                <Text style={styles.text}>
-                  {start} {end}
-                </Text>
-              </View>
-            );
-          }}
+          data={dailyData}
+          keyExtractor={(item) => item.date}
+          renderItem={({ item }) => (
+            <View style={historyStyles.item}>
+              <Text style={historyStyles.date}>📅 {item.displayDate}</Text>
+              <Text style={historyStyles.duration}>
+                ⏱️ Total : {formatDuration(item.totalSeconds)}
+              </Text>
+            </View>
+          )}
         />
       )}
+
       <Button
         title="Actualiser"
         onPress={() => session && loadSlots(session)}
@@ -66,35 +90,3 @@ export default function HistoryScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 16,
-    backgroundColor: "#fff",
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-  },
-  empty: {
-    fontSize: 16,
-    color: "#888",
-    textAlign: "center",
-    marginTop: 32,
-  },
-  item: {
-    padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-  },
-  text: {
-    fontSize: 16,
-  },
-});

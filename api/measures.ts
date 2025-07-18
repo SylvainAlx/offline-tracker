@@ -1,6 +1,6 @@
+import { showMessage } from "@/utils/formatNotification";
 import { supabase } from "@/utils/supabase";
 import { Session } from "@supabase/supabase-js";
-import { Alert } from "react-native";
 import { getDeviceId } from "./devices";
 
 export async function getAllMeasures(session: Session) {
@@ -20,7 +20,7 @@ export async function getAllMeasures(session: Session) {
     }
   } catch (error) {
     if (error instanceof Error) {
-      Alert.alert(error.message);
+      showMessage(error.message);
     }
   }
 }
@@ -43,7 +43,7 @@ export async function getTotalDuration(session: Session) {
     return total;
   } catch (error) {
     if (error instanceof Error) {
-      Alert.alert(error.message);
+      showMessage(error.message);
     }
     return 0;
   }
@@ -75,11 +75,11 @@ export async function insertMeasure(
     if (error) {
       throw error;
     }
-
+    showMessage("Synchronisation réussie 🎉");
     return { success: true };
   } catch (error) {
     if (error instanceof Error) {
-      Alert.alert(error.message);
+      showMessage(error.message);
     }
     return { success: false };
   }
