@@ -1,16 +1,18 @@
 import GoalProgress from "@/components/GoalProgress";
 import { GOALS } from "@/constants/Goals";
+import { COLORS } from "@/constants/Theme";
 import { useOfflineProgress } from "@/contexts/OfflineProgressContext";
 import { useSession } from "@/contexts/SessionContext";
 import { useSyncSession } from "@/hooks/useSyncSession";
 import { globalStyles } from "@/styles/global.styles";
 import { indexStyles } from "@/styles/index.styles";
 import { formatDuration } from "@/utils/formatDuration";
+import { confirmDialog } from "@/utils/formatNotification";
 import { getLastOpenPeriod } from "@/utils/getOfflineTime";
-import { Session } from "@supabase/supabase-js";
+import { Button } from "@rneui/themed";
 import { Link } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { Button, ScrollView, Text, View } from "react-native";
+import { ScrollView, Text, View } from "react-native";
 
 export default function Home() {
   const [since, setSince] = useState<Date | null>(null);
@@ -26,10 +28,17 @@ export default function Home() {
   );
   const [isLoading, setIsLoading] = useState(false);
 
-  const sendPeriods = async (session: Session) => {
+  const sendPeriods = async () => {
+    if (!session) return;
+
+    const confirmed = await confirmDialog(
+      "Es-tu sûr de vouloir synchroniser les périodes non synchronisées ?"
+    );
+
+    if (!confirmed) return;
     try {
       setIsLoading(true);
-      await syncMeasures(session);
+      await syncMeasures();
     } catch (error) {
       console.error(error);
     } finally {
@@ -75,7 +84,7 @@ export default function Home() {
 
   return (
     <ScrollView
-      style={isOnline ? indexStyles.onlineBg : indexStyles.offlineBg}
+      style={globalStyles.container}
       contentContainerStyle={globalStyles.container}
       showsVerticalScrollIndicator={true}
     >
@@ -106,7 +115,7 @@ export default function Home() {
       </View>
 
       <View style={globalStyles.card}>
-        <Text style={indexStyles.sectionTitle}>Statistiques</Text>
+        <Text style={globalStyles.cardTitle}>Statistiques</Text>
         <View>
           <Text style={indexStyles.totalLabel}>🔄 Synchronisé :</Text>
           <Text style={indexStyles.totalValue}>
@@ -126,7 +135,7 @@ export default function Home() {
       </View>
 
       <View style={globalStyles.card}>
-        <Text style={indexStyles.sectionTitle}>🎯 Objectif en cours</Text>
+        <Text style={globalStyles.cardTitle}>🎯 Objectif en cours</Text>
         {nextGoal && (
           <GoalProgress
             goal={nextGoal}
@@ -136,7 +145,7 @@ export default function Home() {
       </View>
 
       <View style={globalStyles.card}>
-        <Text style={indexStyles.sectionTitle}>🔄 Synchronisation</Text>
+        <Text style={globalStyles.cardTitle}>🔄 Synchronisation</Text>
         <Text style={indexStyles.message}>
           {session
             ? "Compte et appareil liés"
@@ -145,13 +154,20 @@ export default function Home() {
         {session ? (
           <Button
             title="Synchroniser"
-            color={isOnline ? "#007aff" : "#aaa"}
+            color={COLORS.primary}
             disabled={!isOnline || totalUnsync === 0 || isLoading}
-            onPress={() => session && sendPeriods(session)}
+            onPress={sendPeriods}
+            radius={100}
+            style={globalStyles.button}
           />
         ) : (
           <Link href={"/profile"}>
-            <Button title="Accéder au profile" color={"#007aff"} />
+            <Button
+              title="Accéder au profile"
+              color={COLORS.primary}
+              radius={100}
+              style={globalStyles.button}
+            />
           </Link>
         )}
       </View>

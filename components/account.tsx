@@ -1,11 +1,14 @@
-import { logout } from "@/api/auth";
+import { deleteAccount, logout } from "@/api/auth";
 import { getUser, updateUser } from "@/api/users";
+import { COLORS } from "@/constants/Theme";
 import { useSession } from "@/contexts/SessionContext";
 import { useSyncSession } from "@/hooks/useSyncSession";
+import { globalStyles } from "@/styles/global.styles";
+import { confirmDialog, showMessage } from "@/utils/formatNotification";
 import { Button, Input } from "@rneui/themed";
 import { Session } from "@supabase/supabase-js";
 import { useEffect, useState } from "react";
-import { Alert, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
 export default function Account({ session }: { session: Session }) {
   const [loading, setLoading] = useState(true);
@@ -34,7 +37,7 @@ export default function Account({ session }: { session: Session }) {
       setDeviceName(device);
     } catch (error) {
       if (error instanceof Error) {
-        Alert.alert(error.message);
+        showMessage(error.message);
       }
     } finally {
       setLoading(false);
@@ -42,12 +45,15 @@ export default function Account({ session }: { session: Session }) {
   }
 
   async function updateProfile({ username }: { username: string }) {
+    const confirmed = await confirmDialog("Mettre à jour le profil ?");
+    if (!confirmed) return;
     try {
       setLoading(true);
       await updateUser({ session, username });
+      showMessage("Profil mis à jour avec succès.");
     } catch (error) {
       if (error instanceof Error) {
-        Alert.alert(error.message);
+        showMessage(error.message);
       }
     } finally {
       setLoading(false);
@@ -55,34 +61,53 @@ export default function Account({ session }: { session: Session }) {
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.device}>{deviceName}</Text>
-      <View style={[styles.verticallySpaced, styles.mt20]}>
-        <Input label="E-mail" value={session?.user?.email} disabled />
+    <View style={globalStyles.container}>
+      <Text style={globalStyles.title}>{deviceName}</Text>
+      <View style={[styles.verticallySpaced]}>
+        <Input
+          style={globalStyles.contentText}
+          label="E-mail"
+          value={session?.user?.email}
+          disabled
+        />
       </View>
       <View style={styles.verticallySpaced}>
         <Input
+          style={globalStyles.contentText}
           label="Nom d'utilisateur"
           value={username || ""}
           onChangeText={(text) => setUsername(text)}
         />
       </View>
 
-      <View style={[styles.verticallySpaced, styles.mt20]}>
+      <View style={[globalStyles.buttonContainer]}>
         <Button
           title={loading ? "Chargement ..." : "Mettre à jour"}
           onPress={() => updateProfile({ username: username ?? "" })}
           disabled={loading}
+          color={COLORS.primary}
+          radius={100}
+          style={globalStyles.button}
         />
-      </View>
-
-      <View style={styles.verticallySpaced}>
         <Button
           title="Se déconnecter"
+          color={COLORS.warning}
           onPress={() => {
             logout();
             setTotalSyncSeconds(0);
           }}
+          radius={100}
+          style={globalStyles.button}
+        />
+        <Button
+          title="Supprimer le compte"
+          color={COLORS.danger}
+          onPress={() => {
+            deleteAccount();
+            setTotalSyncSeconds(0);
+          }}
+          radius={100}
+          style={globalStyles.button}
         />
       </View>
     </View>
@@ -90,22 +115,9 @@ export default function Account({ session }: { session: Session }) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    marginTop: 40,
-    padding: 12,
-  },
   verticallySpaced: {
     paddingTop: 4,
     paddingBottom: 4,
     alignSelf: "stretch",
-  },
-  mt20: {
-    marginTop: 20,
-  },
-  device: {
-    fontSize: 24,
-    color: "#555",
-    textAlign: "center",
-    marginTop: 10,
   },
 });

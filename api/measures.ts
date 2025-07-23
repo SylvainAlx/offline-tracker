@@ -5,7 +5,7 @@ import { getDeviceId } from "./devices";
 
 export async function getAllMeasures(session: Session) {
   try {
-    if (!session?.user) throw new Error("No user on the session!");
+    if (!session?.user) throw new Error("Aucune session active.");
 
     const { data, error, status } = await supabase
       .from("measures")
@@ -27,7 +27,7 @@ export async function getAllMeasures(session: Session) {
 
 export async function getTotalDuration(session: Session) {
   try {
-    if (!session?.user) throw new Error("No user on the session!");
+    if (!session?.user) throw new Error("Aucune session active.");
 
     const { data, error, status } = await supabase
       .from("measures")
@@ -57,15 +57,15 @@ export async function insertMeasure(
   duration: number
 ) {
   try {
-    if (!session?.user) throw new Error("No user on the session!");
+    if (!session?.user) throw new Error("Aucune session active.");
     if (duration <= 0) {
-      throw new Error("Duration must be greater than 0");
+      throw new Error("La durée doit être supérieure à 0 secondes.");
     }
     const deviceId = await getDeviceId(session, deviceName);
     const { error } = await supabase.from("measures").insert([
       {
         user_id: session.user.id,
-        device_id: deviceId?.id,
+        device_id: deviceId,
         start: start.toISOString(),
         end: end.toISOString(),
         duration,

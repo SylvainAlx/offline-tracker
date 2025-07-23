@@ -52,7 +52,7 @@ export const OfflineProgressProvider = ({
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener((state) => {
       const connected = state.isConnected && state.isInternetReachable;
-      console.log({ connected });
+      console.warn({ connected });
       setIsOnline(!!connected);
     });
 
@@ -79,7 +79,6 @@ export const OfflineProgressProvider = ({
       if (wasOffline.current && isOnline) {
         wasOffline.current = false;
         closeLastPeriod(new Date().toISOString());
-        showMessage("cloture de la mesure hors ligne");
       }
       return;
     }

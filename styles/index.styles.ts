@@ -1,52 +1,41 @@
+import { COLORS, SIZES } from "@/constants/Theme";
 import { StyleSheet } from "react-native";
 
 export const indexStyles = StyleSheet.create({
   statusText: {
-    fontSize: 24,
-    fontWeight: "600",
+    fontSize: SIZES.text_lg,
+    fontWeight: "bold",
     textAlign: "center",
-    marginBottom: 8,
+    marginBottom: SIZES.margin,
   },
   timer: {
-    fontSize: 16,
-    color: "#888",
+    fontSize: SIZES.text_lg,
+    color: COLORS.text,
     textAlign: "center",
   },
   message: {
-    fontSize: 16,
-    color: "#555",
+    fontSize: SIZES.text_md,
+    color: COLORS.text,
     textAlign: "center",
-    marginTop: 10,
-    marginBottom: 10,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    marginBottom: 10,
-    textAlign: "center",
+    marginTop: SIZES.margin,
+    marginBottom: SIZES.margin,
   },
   totalLabel: {
-    fontSize: 14,
-    color: "#777",
-    marginTop: 10,
+    fontSize: SIZES.text_md,
+    color: COLORS.text,
+    marginTop: SIZES.margin,
     textAlign: "center",
   },
   totalValue: {
-    fontSize: 18,
+    fontSize: SIZES.text_lg,
     fontWeight: "bold",
-    color: "#333",
+    color: COLORS.secondary,
     textAlign: "center",
   },
   onlineText: {
-    color: "#007aff",
+    color: COLORS.text,
   },
   offlineText: {
-    color: "#4CAF50",
-  },
-  onlineBg: {
-    backgroundColor: "#eaf4ff",
-  },
-  offlineBg: {
-    backgroundColor: "#e6f4ea",
+    color: COLORS.succes,
   },
 });

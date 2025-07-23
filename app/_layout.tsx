@@ -1,5 +1,6 @@
 import { SessionProvider } from "@/contexts/SessionContext";
 import { useFonts } from "expo-font";
+import { StatusBar } from "react-native";
 import AppWithSession from "./AppWithSession";
 
 export default function RootLayout() {
@@ -11,6 +12,7 @@ export default function RootLayout() {
 
   return (
     <SessionProvider>
+      <StatusBar barStyle="light-content" backgroundColor="#000" />
       <AppWithSession />
     </SessionProvider>
   );

@@ -1,17 +1,18 @@
 import { getAllMeasures } from "@/api/measures";
+import { COLORS, SIZES } from "@/constants/Theme";
 import { useSession } from "@/contexts/SessionContext";
 import { globalStyles } from "@/styles/global.styles";
-import { historyStyles } from "@/styles/history.styles";
 import { OfflinePeriod } from "@/types/OfflinePeriod";
+import { Button } from "@rneui/themed";
 import { Session } from "@supabase/supabase-js";
 import { format, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
 import React, { useEffect, useState } from "react";
-import { Button, FlatList, Text, View } from "react-native";
+import { FlatList, Text, View } from "react-native";
 
 type DailySummary = {
-  date: string; // yyyy-MM-dd
-  displayDate: string; // Lundi 15 juillet 2025
+  date: string;
+  displayDate: string;
   totalSeconds: number;
 };
 
@@ -29,7 +30,6 @@ export default function HistoryScreen() {
       duration: item.duration,
     }));
 
-    // Grouper par jour
     const grouped = parsed.reduce<Record<string, number>>((acc, period) => {
       const dayKey = format(parseISO(period.from), "yyyy-MM-dd");
       acc[dayKey] = (acc[dayKey] || 0) + (period.duration || 0);
@@ -37,7 +37,7 @@ export default function HistoryScreen() {
     }, {});
 
     const summaries: DailySummary[] = Object.entries(grouped)
-      .sort(([a], [b]) => (a < b ? 1 : -1)) // plus récents en haut
+      .sort(([a], [b]) => (a < b ? 1 : -1))
       .map(([date, totalSeconds]) => ({
         date,
         displayDate: format(parseISO(date), "EEEE d MMMM yyyy", {
@@ -61,32 +61,40 @@ export default function HistoryScreen() {
   }, [session]);
 
   return (
-    <View style={globalStyles.container}>
-      <Text style={globalStyles.title}>Historique hors ligne</Text>
-
-      {dailyData.length === 0 ? (
-        <Text style={historyStyles.empty}>
-          Aucune session hors ligne enregistrée.
-        </Text>
-      ) : (
-        <FlatList
-          data={dailyData}
-          keyExtractor={(item) => item.date}
-          renderItem={({ item }) => (
-            <View style={historyStyles.item}>
-              <Text style={historyStyles.date}>📅 {item.displayDate}</Text>
-              <Text style={historyStyles.duration}>
-                ⏱️ Total : {formatDuration(item.totalSeconds)}
-              </Text>
-            </View>
+    <FlatList
+      data={dailyData}
+      keyExtractor={(item) => item.date}
+      style={{ flex: 1, backgroundColor: COLORS.background }} // important ici
+      contentContainerStyle={{
+        padding: SIZES.padding,
+        gap: SIZES.margin,
+      }}
+      showsVerticalScrollIndicator
+      ListHeaderComponent={
+        <>
+          <Text style={globalStyles.title}>Mesures synchnonisées</Text>
+          {dailyData.length === 0 && (
+            <Text style={globalStyles.contentText}>
+              Aucune session hors ligne enregistrée.
+            </Text>
           )}
-        />
+          <Button
+            title="Actualiser"
+            onPress={() => session && loadSlots(session)}
+            color={COLORS.primary}
+            radius={100}
+            style={globalStyles.button}
+          />
+        </>
+      }
+      renderItem={({ item }) => (
+        <View style={globalStyles.card}>
+          <Text style={globalStyles.cardTitle}>📅 {item.displayDate}</Text>
+          <Text style={globalStyles.contentText}>
+            ⏱️ Total : {formatDuration(item.totalSeconds)}
+          </Text>
+        </View>
       )}
-
-      <Button
-        title="Actualiser"
-        onPress={() => session && loadSlots(session)}
-      />
-    </View>
+    />
   );
 }

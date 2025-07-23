@@ -1,4 +1,6 @@
 import { Goal } from "@/constants/Goals";
+import { COLORS, SIZES } from "@/constants/Theme";
+import { globalStyles } from "@/styles/global.styles";
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import * as Progress from "react-native-progress";
@@ -13,8 +15,8 @@ export default function GoalProgress({ goal, totalSeconds }: Props) {
   const percent = Math.min(1, totalSeconds / goal.targetSeconds);
 
   return (
-    <View style={[styles.card, isAchieved ? styles.achieved : styles.pending]}>
-      <Text style={styles.title}>
+    <View style={globalStyles.card}>
+      <Text style={globalStyles.cardTitle}>
         {goal.label} {isAchieved ? "✅" : ""}
       </Text>
 
@@ -22,13 +24,12 @@ export default function GoalProgress({ goal, totalSeconds }: Props) {
         <>
           <Progress.Bar
             progress={percent}
-            width={null}
-            color="#4CAF50"
+            // width={null}
+            color={COLORS.warning}
             height={12}
             borderRadius={10}
-            unfilledColor="#eee"
-            borderWidth={0}
-            style={{ marginTop: 10 }}
+            borderColor={COLORS.border}
+            borderWidth={2}
           />
           <Text style={styles.percentText}>
             {(percent * 100).toFixed(0)}% complété
@@ -44,34 +45,15 @@ export default function GoalProgress({ goal, totalSeconds }: Props) {
 }
 
 const styles = StyleSheet.create({
-  card: {
-    padding: 16,
-    borderRadius: 12,
-    marginVertical: 10,
-  },
-  pending: {
-    backgroundColor: "#f9f9f9",
-    borderColor: "#ddd",
-    borderWidth: 1,
-  },
-  achieved: {
-    backgroundColor: "#e0f7e9",
-    borderColor: "#4CAF50",
-    borderWidth: 1,
-  },
-  title: {
-    fontSize: 16,
-    fontWeight: "600",
-  },
   percentText: {
-    marginTop: 6,
-    fontSize: 14,
-    color: "#888",
+    marginTop: SIZES.margin,
+    fontSize: SIZES.text_md,
+    color: COLORS.warning,
   },
   achievedText: {
-    marginTop: 10,
-    fontSize: 14,
+    marginTop: SIZES.margin,
+    fontSize: SIZES.text_md,
     fontWeight: "600",
-    color: "#388e3c",
+    color: COLORS.succes,
   },
 });

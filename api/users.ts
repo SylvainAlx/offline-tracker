@@ -4,7 +4,7 @@ import { Session } from "@supabase/supabase-js";
 
 export async function getUser(session: Session) {
   try {
-    if (!session?.user) throw new Error("No user on the session!");
+    if (!session?.user) throw new Error("Aucune session active.");
 
     const { data, error, status } = await supabase
       .from("users")
@@ -33,7 +33,7 @@ export async function updateUser({
   username: string;
 }) {
   try {
-    if (!session?.user) throw new Error("No user on the session!");
+    if (!session?.user) throw new Error("Aucune session active.");
 
     const updates = {
       id: session?.user.id,

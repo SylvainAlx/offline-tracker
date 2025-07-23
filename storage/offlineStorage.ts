@@ -1,5 +1,6 @@
 import { config } from "@/config/env";
 import { STORAGE_KEYS } from "@/constants/Labels";
+import { showMessage } from "@/utils/formatNotification";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { OfflinePeriod } from "../types/OfflinePeriod";
 
@@ -41,6 +42,7 @@ export async function closeLastPeriod(to: string) {
     STORAGE_KEYS.OFFLINE_PERIODS,
     JSON.stringify(reversed.reverse())
   );
+  showMessage("cloture de la mesure hors ligne");
 }
 
 export async function deleteUnclosePeriods() {

@@ -1,8 +1,10 @@
 import { signInWithEmail, signUpWithEmail } from "@/api/auth";
+import { COLORS } from "@/constants/Theme";
+import { globalStyles } from "@/styles/global.styles";
 import { supabase } from "@/utils/supabase";
 import { Button, Input } from "@rneui/themed";
 import React, { useRef, useState } from "react";
-import { AppState, StyleSheet, TextInput, View } from "react-native";
+import { AppState, Text, TextInput, View } from "react-native";
 
 // Tells Supabase Auth to continuously refresh the session automatically if
 // the app is in the foreground. When this is added, you will continue to receive
@@ -36,9 +38,16 @@ export default function Auth() {
   }
 
   return (
-    <View style={styles.container}>
-      <View style={[styles.verticallySpaced, styles.mt20]}>
+    <View style={globalStyles.container}>
+      <Text style={globalStyles.title}>Connexion</Text>
+      <Text style={globalStyles.contentText}>
+        La connexion à un compte est facultative mais conseillée si vous
+        souhaitez sauvegarder votre temps passé hors ligne et le cummuler avec
+        d&apos;autres appareils
+      </Text>
+      <View style={[globalStyles.verticallySpaced]}>
         <Input
+          style={globalStyles.contentText}
           label="E-mail"
           leftIcon={{ type: "font-awesome", name: "envelope" }}
           onChangeText={(text) => setEmail(text)}
@@ -48,8 +57,9 @@ export default function Auth() {
           onSubmitEditing={() => passwordRef.current?.focus()}
         />
       </View>
-      <View style={styles.verticallySpaced}>
+      <View style={globalStyles.verticallySpaced}>
         <Input
+          style={globalStyles.contentText}
           label="Mot de passe"
           leftIcon={{ type: "font-awesome", name: "lock" }}
           onChangeText={(text) => setPassword(text)}
@@ -61,31 +71,24 @@ export default function Auth() {
           onSubmitEditing={signIn}
         />
       </View>
-      <View style={[styles.verticallySpaced, styles.mt20]}>
-        <Button title="Se connecter" disabled={loading} onPress={signIn} />
-      </View>
-      <View style={styles.verticallySpaced}>
+      <View style={[globalStyles.buttonContainer]}>
+        <Button
+          title="Se connecter"
+          disabled={loading}
+          onPress={signIn}
+          color={COLORS.primary}
+          radius={100}
+          style={globalStyles.button}
+        />
         <Button
           title="Créer un compte"
           disabled={loading}
           onPress={() => signUp()}
+          color={COLORS.primary}
+          radius={100}
+          style={globalStyles.button}
         />
       </View>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    marginTop: 40,
-    padding: 12,
-  },
-  verticallySpaced: {
-    paddingTop: 4,
-    paddingBottom: 4,
-    alignSelf: "stretch",
-  },
-  mt20: {
-    marginTop: 20,
-  },
-});

@@ -4,20 +4,20 @@ import { Session } from "@supabase/supabase-js";
 
 export async function getDeviceId(session: Session, deviceName: string) {
   try {
-    if (!session?.user) throw new Error("No user on the session!");
+    if (!session?.user) throw new Error("Aucune session active.");
 
     const { data, error, status } = await supabase
       .from("devices")
-      .select(`id`)
-      .eq("user_id", session?.user.id)
+      .select("id")
+      .eq("user_id", session.user.id)
       .eq("name", deviceName)
-      .single();
-    if (error && status !== 406) {
-      throw error;
-    }
+      .limit(1);
 
-    if (data) {
-      return data;
+    if (error && status !== 406) throw error;
+    if (data && data.length > 0) {
+      return data[0].id; // Return the first device ID found
+    } else {
+      throw new Error("L'appareil n'existe pas pour cet utilisateur.");
     }
   } catch (error) {
     if (error instanceof Error) {
@@ -28,7 +28,7 @@ export async function getDeviceId(session: Session, deviceName: string) {
 
 export async function insertDevice(session: Session, deviceName: string) {
   try {
-    if (!session?.user) throw new Error("No user on the session!");
+    if (!session?.user) throw new Error("Aucune session active.");
 
     const { data: existingDevices, error: selectError } = await supabase
       .from("devices")
@@ -39,15 +39,20 @@ export async function insertDevice(session: Session, deviceName: string) {
 
     if (selectError) throw selectError;
     if (existingDevices && existingDevices.length > 0) {
-      throw new Error("A device with this name already exists for this user.");
+      throw new Error(
+        "Un appareil avec ce nom existe déjà pour cet utilisateur."
+      );
     }
 
-    const { error } = await supabase.from("devices").insert([
-      {
-        user_id: session.user.id,
-        name: deviceName,
-      },
-    ]);
+    const { error } = await supabase.from("devices").upsert(
+      [
+        {
+          user_id: session.user.id,
+          name: deviceName,
+        },
+      ],
+      { onConflict: "user_id,name" } // très important
+    );
 
     if (error) {
       throw error;
