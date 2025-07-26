@@ -9,30 +9,35 @@ export const globalStyles = StyleSheet.create({
     backgroundColor: COLORS.background,
     display: "flex",
     flexDirection: "column",
-    gap: SIZES.margin,
+    gap: SIZES.margin * 2,
   },
   title: {
-    color: COLORS.primary,
+    marginBottom: SIZES.margin,
+    color: COLORS.secondary,
     fontSize: SIZES.text_xl,
     fontWeight: "bold",
-    marginBottom: SIZES.margin,
     textAlign: "center",
   },
   card: {
     backgroundColor: COLORS.card,
-    borderColor: COLORS.border,
-    borderWidth: SIZES.borderWidth,
     borderRadius: SIZES.borderRadius,
     padding: SIZES.padding,
     display: "flex",
     flexDirection: "column",
+    gap: SIZES.margin,
     alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
   cardTitle: {
     fontSize: SIZES.text_lg,
     color: COLORS.text,
     fontWeight: "bold",
-    marginBottom: SIZES.margin,
     textAlign: "center",
   },
   contentText: {
@@ -40,7 +45,6 @@ export const globalStyles = StyleSheet.create({
     color: COLORS.text,
   },
   link: {
-    marginTop: SIZES.margin,
     paddingVertical: SIZES.padding / 2,
   },
   verticallySpaced: {
@@ -62,5 +66,13 @@ export const globalStyles = StyleSheet.create({
     paddingVertical: SIZES.padding / 2,
     paddingHorizontal: SIZES.padding,
     alignItems: "center",
+  },
+  input: {
+    borderWidth: 2,
+    borderColor: COLORS.primary,
+    color: COLORS.text,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
   },
 });

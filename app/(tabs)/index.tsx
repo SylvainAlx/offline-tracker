@@ -1,4 +1,5 @@
 import GoalProgress from "@/components/GoalProgress";
+import TimerCard from "@/components/TimerCard";
 import { GOALS } from "@/constants/Goals";
 import { COLORS } from "@/constants/Theme";
 import { useOfflineProgress } from "@/contexts/OfflineProgressContext";
@@ -113,27 +114,7 @@ export default function Home() {
             : "✨ Bien joué ! Profite de ta déconnexion pour te recentrer."}
         </Text>
       </View>
-
-      <View style={globalStyles.card}>
-        <Text style={globalStyles.cardTitle}>Statistiques</Text>
-        <View>
-          <Text style={indexStyles.totalLabel}>🔄 Synchronisé :</Text>
-          <Text style={indexStyles.totalValue}>
-            {formatDuration(totalSyncSeconds)}
-          </Text>
-        </View>
-        <View>
-          <Text style={indexStyles.totalLabel}>📥 Non synchronisé :</Text>
-          {!isOnline && totalUnsync === 0 ? (
-            <Text style={indexStyles.totalValue}>DÉMARRAGE...</Text>
-          ) : (
-            <Text style={indexStyles.totalValue}>
-              {formatDuration(totalUnsync)}
-            </Text>
-          )}
-        </View>
-      </View>
-
+      <TimerCard />
       <View style={globalStyles.card}>
         <Text style={globalStyles.cardTitle}>🎯 Objectif en cours</Text>
         {nextGoal && (
@@ -161,7 +142,7 @@ export default function Home() {
             style={globalStyles.button}
           />
         ) : (
-          <Link href={"/profile"}>
+          <Link href={"/profile"} asChild>
             <Button
               title="Accéder au profile"
               color={COLORS.primary}

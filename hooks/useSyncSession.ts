@@ -30,8 +30,7 @@ export const useSyncSession = (session: Session | null) => {
         const { success } = await insertMeasure(
           session,
           modelName,
-          start,
-          end,
+          start.toDateString(),
           duration
         );
         if (success) {

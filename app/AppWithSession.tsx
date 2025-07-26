@@ -1,9 +1,7 @@
 import { OfflineProgressProvider } from "@/contexts/OfflineProgressContext";
 import { useSession } from "@/contexts/SessionContext";
 import { useSyncSession } from "@/hooks/useSyncSession";
-import { DarkTheme, ThemeProvider } from "@react-navigation/native";
 import { Stack } from "expo-router";
-import { StatusBar } from "react-native";
 
 export default function AppWithSession() {
   const { session } = useSession();
@@ -12,14 +10,12 @@ export default function AppWithSession() {
 
   return (
     <OfflineProgressProvider>
-      <ThemeProvider value={DarkTheme}>
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="+not-found" />
-        </Stack>
-        {/* <ConnectionStatusIndicator /> */}
-        <StatusBar barStyle={"dark-content"} />
-      </ThemeProvider>
+      {/* <ThemeProvider value={DarkTheme}> */}
+      <Stack>
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="+not-found" />
+      </Stack>
+      {/* </ThemeProvider> */}
     </OfflineProgressProvider>
   );
 }

@@ -1,4 +1,7 @@
 // contexts/SessionContext.tsx
+import { getUser } from "@/api/users";
+import { useSyncSession } from "@/hooks/useSyncSession";
+import { showMessage } from "@/utils/formatNotification";
 import { supabase } from "@/utils/supabase";
 import { Session, User } from "@supabase/supabase-js";
 import { createContext, useContext, useEffect, useState } from "react";
@@ -9,7 +12,6 @@ type SessionContextType = {
   username: string | null;
   setUsername: (value: string) => void;
   deviceName: string | null;
-  setDeviceName: (value: string) => void;
   totalSyncSeconds: number;
   setTotalSyncSeconds: (value: number) => void;
 };
@@ -20,7 +22,6 @@ const SessionContext = createContext<SessionContextType>({
   username: null,
   setUsername: () => {},
   deviceName: null,
-  setDeviceName: () => {},
   totalSyncSeconds: 0,
   setTotalSyncSeconds: () => {},
 });
@@ -34,6 +35,23 @@ export const SessionProvider = ({
   const [deviceName, setDeviceName] = useState<string | null>(null);
   const [username, setUsername] = useState<string | null>(null);
   const [totalSyncSeconds, setTotalSyncSeconds] = useState<number>(0);
+  const { getAndUpdateLocalDevice } = useSyncSession(session);
+
+  async function getProfile() {
+    try {
+      if (!session) return;
+      const data = await getUser(session);
+      if (data) {
+        setUsername(data.username);
+      }
+      const device = await getAndUpdateLocalDevice(session);
+      setDeviceName(device);
+    } catch (error) {
+      if (error instanceof Error) {
+        showMessage(error.message);
+      }
+    }
+  }
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -51,6 +69,11 @@ export const SessionProvider = ({
     };
   }, []);
 
+  useEffect(() => {
+    getProfile();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session]);
+
   return (
     <SessionContext.Provider
       value={{
@@ -59,7 +82,6 @@ export const SessionProvider = ({
         username,
         setUsername,
         deviceName,
-        setDeviceName,
         totalSyncSeconds,
         setTotalSyncSeconds,
       }}

@@ -25,11 +25,11 @@ export default function GoalProgress({ goal, totalSeconds }: Props) {
           <Progress.Bar
             progress={percent}
             // width={null}
-            color={COLORS.warning}
+            color={COLORS.primary}
             height={12}
             borderRadius={10}
-            borderColor={COLORS.border}
-            borderWidth={2}
+            // borderColor={COLORS.border}
+            // borderWidth={2}
           />
           <Text style={styles.percentText}>
             {(percent * 100).toFixed(0)}% complété
@@ -47,12 +47,12 @@ export default function GoalProgress({ goal, totalSeconds }: Props) {
 const styles = StyleSheet.create({
   percentText: {
     marginTop: SIZES.margin,
-    fontSize: SIZES.text_md,
-    color: COLORS.warning,
+    fontSize: SIZES.text_lg,
+    color: COLORS.primary,
   },
   achievedText: {
     marginTop: SIZES.margin,
-    fontSize: SIZES.text_md,
+    fontSize: SIZES.text_lg,
     fontWeight: "600",
     color: COLORS.succes,
   },
